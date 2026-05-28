@@ -1,0 +1,35 @@
+lisa-addressed:
+---
+Comment (policies/compliance_framework/elbv2_health_check_configured.rego:41):
+**Medium — asymmetric defaults for missing threshold fields.**
+
+`object.get(config, "healthy_threshold_count", 0)` and the matching `unhealthy := ... 0` (line 42) produce inconsistent behavior when the upstream evidence omits these fields:
+
+- Missing `healthy_threshold_count` → defaults to `0` → `0 < min_healthy (2)` → fires `healthy_threshold_too_low` (false positive).
+- Missing `unhealthy_threshold_count` → defaults to `0` → `0 > max_unhealthy (10)` is false → silently passes (false negative).
+
+Verified with `opa eval` on an input that omits both fields: the policy emits exactly `healthy_threshold_too_low`. The README design note ("AWS always assigns defaults") only holds if the upstream `aws-elbv2` plugin reliably emits the populated values; if it ever drops one, every target group lights up while the missing unhealthy side stays quiet.
+
+Suggested fix: either (a) emit a distinct `health_check_thresholds_missing` violation when the keys are absent and only evaluate the bound checks when the field is present, or (b) reference `config.healthy_threshold_count` / `config.unhealthy_threshold_count` directly (so an absent key makes the rule undefined rather than `0`-defaulted). Pick one — but the current asymmetric default shouldn't ship.
+---
+Comment (policies/compliance_framework/elbv2_target_movement_restrictions.rego:8):
+**Low — metric ID looks mis-mapped.**
+
+`ACM_TLS_ENDPOINTS` refers to AWS Certificate Manager / TLS endpoint coverage, but this policy enforces a target-group protocol/port allow-list — there is no certificate dimension in the check. The controls (`ctrl-cc6-7-002`, `ctrl-cc6-7-005`) read like network movement / segmentation controls, which doesn't match an ACM metric either.
+
+Could you confirm this isn't a copy/paste from another policy? If it is, picking a metric ID that actually reflects "approved network movement / segmentation" would make downstream dashboards roll up correctly.
+---
+Comment (policies/compliance_framework/elbv2_health_check_configured_test.rego:78):
+**Low — missing boundary and missing-field tests.**
+
+The threshold tests cover "well past the bound" (`healthy_threshold_count: 1` vs min 2, `unhealthy_threshold_count: 11` vs max 10) but never the boundary itself:
+
+- `healthy_threshold_count == min_healthy` (i.e. 2) should pass — currently untested.
+- `unhealthy_threshold_count == max_unhealthy` (i.e. 10) should pass — currently untested.
+
+The comparisons are `<` / `>`, so the boundaries should pass today, but adding one assertion per bound locks that in against future off-by-one drift.
+
+Also related to the Medium on `elbv2_health_check_configured.rego:41`: there's no test that exercises the "config omits `healthy_threshold_count` entirely" case — which currently *does* fire a violation by accident of the `object.get(..., 0)` default. Whichever way you resolve that finding, a test pinning the chosen behavior would help.
+Implementation guidance: In `policies/compliance_framework/elbv2_health_check_configured.rego`, stop using `0` as the default for missing threshold fields. Change `healthy := object.get(config, "healthy_threshold_count", 0)` and `unhealthy := object.get(config, "unhealthy_threshold_count", 0)` to use `null` as the missing-value sentinel. Also change the `description` sprintf threshold placeholders from `%d` to `%v` so missing values do not create formatting errors. Add helper rules such as `healthy_threshold_present if { healthy != null }`, `unhealthy_threshold_present if { unhealthy != null }`, and `thresholds_missing` that is true when either threshold is absent. Add one map-indexed violation `violation[{"id": "health_check_thresholds_missing"}]` gated by `resource_type == "target-group"` and `thresholds_missing`. Update `healthy_threshold_too_low` and `unhealthy_threshold_too_high` so they only compare bounds when the corresponding threshold is present; do not let `null < min_healthy` or `null > max_unhealthy` be evaluated. Preserve the existing resource-type gate, top-level `data.*` tunables, and map-indexed violation form. Do not add a disabled-health-check model or read `input.policy_inputs`.
+Implementation guidance: In `policies/compliance_framework/elbv2_target_movement_restrictions.rego`, remove the copied `ACM_TLS_ENDPOINTS` metric ID from the METADATA because this policy checks target-group protocol/port movement restrictions, not ACM certificate/TLS endpoint coverage. Keep the `controls` list unchanged. If there is an approved metric catalog value for target-group network movement or segmentation, use that reviewed value instead; do not invent a new metric ID. If no approved replacement is available in this repo/change, remove only the `metric_ids` entry for this policy. Mirror the same change in `README.md` in the policy table row for `compliance_framework.elbv2_target_movement_restrictions`: replace `ACM_TLS_ENDPOINTS` with the approved replacement, or use an empty/`N/A` metric cell if the metadata entry was removed. Do not change the health-check policy's `ELB_TARGET_HEALTH` metric.
+Implementation guidance: In `policies/compliance_framework/elbv2_health_check_configured_test.rego`, add focused tests for threshold boundaries and the missing-field behavior chosen in `elbv2_health_check_configured.rego`. Add one test where `healthy_threshold_count` is exactly `2` and otherwise uses `well_configured_http_tg`; assert `count(policy.violation) == 0`. Add one test where `unhealthy_threshold_count` is exactly `10` and otherwise uses `well_configured_http_tg`; assert `count(policy.violation) == 0`. Add at least one missing-threshold test by building an input with `object.remove(well_configured_http_tg.config, {"healthy_threshold_count"})` or removing both threshold keys, then assert `policy.violation[{"id": "health_check_thresholds_missing"}]` and `count(policy.violation) == 1`. Do not assert `healthy_threshold_too_low` for a missing field after the policy fix; missing evidence should be represented by the new missing-threshold violation, while present out-of-bounds numeric values should continue using the existing low/high violation IDs. Run `opa fmt --list --fail policies`, `opa check --strict policies`, and `opa test policies`.
