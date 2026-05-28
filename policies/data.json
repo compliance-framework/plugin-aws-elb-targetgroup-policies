@@ -1,0 +1,9 @@
+{
+  "minimum_availability_zones": 2,
+  "required_owner_tag_keys": ["owner", "team"],
+  "require_disposal_audit_events": false,
+  "disposal_delete_event_names": ["DeleteLoadBalancer"],
+  "require_management_audit_events": false,
+  "change_review_window_days": 90,
+  "unknown_endpoint_scheme_action": "violation"
+}

@@ -1,0 +1,10 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build-and-upload:
+    uses: ./.github/workflows/build-and-upload.yml

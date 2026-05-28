@@ -1,0 +1,32 @@
+name: Build and Upload
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@2d7d9f7ff5b310f983d059b68785b3c74d8b8edd
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: stable
+          cache: false
+      - uses: open-policy-agent/setup-opa@34a30e8a924d1b03ce2cf7abe97250bbb1f332b5
+        with:
+          version: 1.6.0
+      - run: mkdir -p dist && opa build -b policies -o dist/bundle.tar.gz
+      - uses: softprops/action-gh-release@f12ad255e1c9d5cfd57d1ea9dca3e3001392be35
+        with:
+          files: dist/bundle.tar.gz
+      - run: go install github.com/compliance-framework/gooci@v0.0.7
+      - run: gooci login ghcr.io --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}"
+      - run: gooci upload-single dist/bundle.tar.gz "ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+      - if: ${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-') }}
+        run: gooci upload-single dist/bundle.tar.gz "ghcr.io/${{ github.repository }}:latest"
