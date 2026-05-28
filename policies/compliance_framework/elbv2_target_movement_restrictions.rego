@@ -38,7 +38,7 @@ resource_type := object.get(resource, "type", "")
 tg_arn := object.get(config, "target_group_arn", "unknown")
 protocol := upper(object.get(config, "protocol", ""))
 port := object.get(config, "port", 0)
-approved_protocols := data.approved_target_protocols
+approved_protocols := [upper(p) | p := data.approved_target_protocols[_]]
 approved_ports := data.approved_target_ports
 
 skip_reason := sprintf("Resource type %q is not a target group; this policy only applies to target-group records.", [resource_type]) if {

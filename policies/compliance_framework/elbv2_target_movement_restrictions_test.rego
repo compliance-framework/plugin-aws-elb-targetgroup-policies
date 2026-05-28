@@ -33,13 +33,17 @@ test_approved_protocol_and_port_pass if {
 }
 
 test_target_protocol_not_approved if {
-	count(policy.violation) >= 1 with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
+	count(policy.violation) == 1 with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
 	policy.violation[{"id": "target_protocol_not_approved"}] with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
 }
 
 test_target_port_not_approved if {
-	count(policy.violation) >= 1 with input as http_target_group with data.approved_target_ports as [443]
+	count(policy.violation) == 1 with input as http_target_group with data.approved_target_ports as [443]
 	policy.violation[{"id": "target_port_not_approved"}] with input as http_target_group with data.approved_target_ports as [443]
+}
+
+test_approved_protocol_data_is_case_insensitive if {
+	count(policy.violation) == 0 with input as http_target_group with data.approved_target_protocols as ["http"]
 }
 
 test_non_target_group_record_skipped if {
