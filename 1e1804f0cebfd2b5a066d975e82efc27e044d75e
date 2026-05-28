@@ -4,3 +4,7 @@ lisa-design:
 - Violations use the map-indexed Rego form `violation[{"id": "..."}] if { ... }` so the CCF plugin sees unique violation IDs under its expected map semantics.
 - `approved_target_protocols` and `approved_target_ports` are opt-in allow lists: empty lists disable enforcement, while non-empty lists fail only values outside the configured list.
 - Health-check compliance relies on protocol/path presence and threshold bounds rather than a disabled-health-check state because AWS target groups always receive health-check defaults.
+
+lisa-selfreview: pass 1 (verdict=request_changes)
+- [medium] .github/workflows/build-and-upload.yml:14 (security): The release workflow was changed from commit-pinned actions and gooci v0.0.7 to mutable action tags and `go install github.com/compliance-framework/gooci@latest`. This job has `contents: write` and `packages: write` and publishes both GitHub Releases and GHCR images with `GITHUB_TOKEN`, so upstream tag/module movement can change the code that runs with publish credentials and makes releases non-reproducible. The same action-pin regression is present in the test workflow.
+- [medium] .github/workflows/build-and-upload.yml:31 (correctness): `release.yml` invokes this workflow for every pushed tag (`tags: ['*']`), but the changed workflow now always uploads the GHCR `:latest` tag. A prerelease or test tag such as `v1.2.0-rc.1` will therefore overwrite `latest`, whereas the previous workflow only promoted non-hyphenated tag names.
