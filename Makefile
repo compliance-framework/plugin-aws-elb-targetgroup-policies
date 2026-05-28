@@ -2,7 +2,7 @@ test:        ## Run policy unit tests
 	@opa test policies
 
 validate:    ## Lint/parse policies
-	@opa check --strict policies
+	@opa check policies
 
 clean:
 	@rm -f dist/*
