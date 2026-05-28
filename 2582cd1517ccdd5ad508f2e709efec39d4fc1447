@@ -1,0 +1,11 @@
+lisa-addressed:
+---
+[medium] LICENSE:1 (correctness)
+The branch replaces the repository license text from GNU AGPLv3 to Apache-2.0. That is a substantive relicensing of the whole policy bundle, not a policy implementation change, and there is no accompanying approval or metadata update proving the project has permission to relicense existing code. Pushing this as-is can make downstream use and distribution legally incorrect.
+Suggested fix: Restore the existing AGPLv3 LICENSE text unless the relicensing is intentional and approved; if intentional, include the explicit approval/context and update any related project metadata in the same change.
+Guidance: In LICENSE, restore the repository's prior GNU AGPLv3 license text unless there is explicit project-owner approval to relicense this bundle to Apache-2.0. Do not leave a partial license header or mix AGPL and Apache text. If relicensing is actually intentional and approved, keep Apache-2.0 only with that approval documented in the change and update any related metadata or README license references in the same commit; otherwise, the safe fix is to revert LICENSE exactly to the previous AGPLv3 contents from the base branch.
+---
+[low] Makefile:5 (test quality)
+The changed `validate` target now runs `opa check policies` while README and CI both require `opa check --strict policies`. This makes the local validation command weaker than the documented and enforced check, so contributors can miss strict-mode Rego issues until CI.
+Suggested fix: Change the Makefile target back to `opa check --strict policies` so local validation, README instructions, and CI all execute the same check.
+Guidance: In Makefile, update the validate target command from `@opa check policies` to `@opa check --strict policies` so local validation matches README.md and .github/workflows/test.yml. Keep the target name and help text unchanged. Do not change the test target or replace validate with opa fmt/opa test; the specific missing behavior is strict Rego checking.
