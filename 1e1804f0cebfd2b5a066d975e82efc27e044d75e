@@ -1,0 +1,6 @@
+lisa-design:
+- The bundle now targets only `input.resource.type == "target-group"`; every violation rule gates on that resource type and non-target-group records expose `skip_reason` without violations.
+- Runtime tunables are flattened top-level `data.*` keys from `policies/data.json`; policy code intentionally does not read `input.policy_inputs` or nested package data because the agent overrides values through `policy_data`.
+- Violations use the map-indexed Rego form `violation[{"id": "..."}] if { ... }` so the CCF plugin sees unique violation IDs under its expected map semantics.
+- `approved_target_protocols` and `approved_target_ports` are opt-in allow lists: empty lists disable enforcement, while non-empty lists fail only values outside the configured list.
+- Health-check compliance relies on protocol/path presence and threshold bounds rather than a disabled-health-check state because AWS target groups always receive health-check defaults.
