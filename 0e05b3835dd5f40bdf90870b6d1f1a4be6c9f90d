@@ -1,0 +1,267 @@
+lisa-addressed:
+---
+Comment (policies/elbv2_health_check_configured.rego:1):
+_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_
+
+<details>
+<summary>🧩 Analysis chain</summary>
+
+🏁 Script executed:
+
+```shell
+#!/bin/bash
+set -euo pipefail
+
+python - <<'PY'
+import pathlib, re
+
+for p in pathlib.Path(".").rglob("*.rego"):
+    text = p.read_text(encoding="utf-8")
+    m = re.search(r'(?m)^\s*package\s+([A-Za-z0-9_.]+)\s*$' , text)
+    if not m:
+        continue
+    pkg = m.group(1)
+    expected_suffix = pathlib.Path(*pkg.split(".")).with_suffix(".rego")
+    actual = p.as_posix()
+    if not actual.endswith(expected_suffix.as_posix()):
+        print(f"MISMATCH: {actual}")
+        print(f"  package:  {pkg}")
+        print(f"  expected: .../{expected_suffix.as_posix()}")
+PY
+```
+
+Repository: compliance-framework/plugin-aws-elb-targetgroup-policies
+
+Length of output: 916
+
+---
+
+🏁 Script executed:
+
+```shell
+#!/bin/bash
+set -euo pipefail
+
+python - <<'PY'
+import pathlib, re
+
+for p in pathlib.Path(".").rglob("*.rego"):
+    text = p.read_text(encoding="utf-8")
+    m = re.search(r'(?m)^\s*package\s+([A-Za-z0-9_.]+)\s*$', text)
+    if not m:
+        continue
+    pkg = m.group(1)
+    expected_suffix = pathlib.Path(*pkg.split(".")).with_suffix(".rego")
+    actual = p.as_posix()
+    if not actual.endswith(expected_suffix.as_posix()):
+        print(f"MISMATCH: {actual}")
+        print(f"  package:  {pkg}")
+        print(f"  expected: .../{expected_suffix.as_posix()}")
+PY
+```
+
+Repository: compliance-framework/plugin-aws-elb-targetgroup-policies
+
+Length of output: 916
+
+---
+
+</details>
+
+**Fix Regal package-to-path mismatch for Rego modules (major lint risk).**
+
+`policies/elbv2_health_check_configured.rego` declares `package compliance_framework.elbv2_health_check_configured`, but the file path doesn’t mirror the package segments (expected `compliance_framework/elbv2_health_check_configured.rego`). Same mismatch for:
+- `policies/elbv2_health_check_configured_test.rego`
+- `policies/elbv2_target_movement_restrictions.rego`
+- `policies/elbv2_target_movement_restrictions_test.rego`
+
+Move these files into a directory structure matching the `package` declarations (or update the `package` names) to satisfy Regal’s “Directory structure should mirror package” rule when enabled.
+
+<details>
+<summary>🧰 Tools</summary>
+
+<details>
+<summary>🪛 Regal (0.40.0)</summary>
+
+[error] 1-1: Directory structure should mirror package
+
+(idiomatic)
+
+</details>
+
+</details>
+
+<details>
+<summary>🤖 Prompt for AI Agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+In `@policies/elbv2_health_check_configured.rego` at line 1, The Rego modules
+declare package compliance_framework.elbv2_health_check_configured (and similar
+for elbv2_target_movement_restrictions and their _test files) but their file
+paths don't mirror that package; to fix, either move each file into a directory
+tree matching the package segments (e.g., create policies/compliance_framework/
+and place elbv2_health_check_configured.rego and
+elbv2_health_check_configured_test.rego there, and likewise for
+elbv2_target_movement_restrictions*.rego) or update the package declarations
+inside those files to match their current path; adjust package names or file
+locations for the four files so Regal's "Directory structure should mirror
+package" rule is satisfied.
+```
+
+</details>
+
+<!-- fingerprinting:phantom:poseidon:hawk -->
+
+<!-- This is an auto-generated comment by CodeRabbit -->
+---
+Comment (policies/elbv2_target_movement_restrictions_test.rego:43):
+_🧹 Nitpick_ | _🔵 Trivial_ | _⚡ Quick win_
+
+**Tighten failure-test assertions to catch unintended extra violations.**
+
+These tests are single-cause scenarios; using `count(policy.violation) >= 1` can hide regressions that emit additional violations. Prefer exact count checks.
+
+<details>
+<summary>Suggested fix</summary>
+
+```diff
+ test_target_protocol_not_approved if {
+-	count(policy.violation) >= 1 with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
++	count(policy.violation) == 1 with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
+ 	policy.violation[{"id": "target_protocol_not_approved"}] with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
+ }
+@@
+ test_target_port_not_approved if {
+-	count(policy.violation) >= 1 with input as http_target_group with data.approved_target_ports as [443]
++	count(policy.violation) == 1 with input as http_target_group with data.approved_target_ports as [443]
+ 	policy.violation[{"id": "target_port_not_approved"}] with input as http_target_group with data.approved_target_ports as [443]
+ }
+```
+</details>
+
+<!-- suggestion_start -->
+
+<details>
+<summary>📝 Committable suggestion</summary>
+
+> ‼️ **IMPORTANT**
+> Carefully review the code before committing. Ensure that it accurately replaces the highlighted code, contains no missing lines, and has no issues with indentation. Thoroughly test & benchmark the code to ensure it meets the requirements.
+
+```suggestion
+test_target_protocol_not_approved if {
+	count(policy.violation) == 1 with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
+	policy.violation[{"id": "target_protocol_not_approved"}] with input as http_target_group with data.approved_target_protocols as ["HTTPS"]
+}
+
+test_target_port_not_approved if {
+	count(policy.violation) == 1 with input as http_target_group with data.approved_target_ports as [443]
+	policy.violation[{"id": "target_port_not_approved"}] with input as http_target_group with data.approved_target_ports as [443]
+}
+```
+
+</details>
+
+<!-- suggestion_end -->
+
+<details>
+<summary>🤖 Prompt for AI Agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+In `@policies/elbv2_target_movement_restrictions_test.rego` around lines 35 - 43,
+The tests test_target_protocol_not_approved and test_target_port_not_approved
+use a loose assertion count(policy.violation) >= 1 which can mask
+extra/unintended violations; change those assertions to assert the exact
+expected number (e.g., count(policy.violation) == 1) for the cases using input
+as http_target_group and data.approved_target_protocols /
+data.approved_target_ports so the tests fail if additional violations are
+emitted and precisely validate only the single expected violation id
+(policy.violation).
+```
+
+</details>
+
+<!-- fingerprinting:phantom:poseidon:hawk -->
+
+<!-- This is an auto-generated comment by CodeRabbit -->
+---
+Comment (policies/elbv2_target_movement_restrictions.rego:54):
+_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_
+
+**Normalize approved protocol inventory before membership checks.**
+
+`protocol` is uppercased, but `data.approved_target_protocols` is not. Lower/mixed-case entries in policy data can incorrectly trigger `target_protocol_not_approved`.
+
+<details>
+<summary>Suggested fix</summary>
+
+```diff
+-approved_protocols := data.approved_target_protocols
++approved_protocols := [upper(p) | p := data.approved_target_protocols[_]]
+@@
+ approved_protocol if {
+ 	protocol in approved_protocols
+ }
+```
+</details>
+
+<!-- suggestion_start -->
+
+<details>
+<summary>📝 Committable suggestion</summary>
+
+> ‼️ **IMPORTANT**
+> Carefully review the code before committing. Ensure that it accurately replaces the highlighted code, contains no missing lines, and has no issues with indentation. Thoroughly test & benchmark the code to ensure it meets the requirements.
+
+```suggestion
+approved_protocols := [upper(p) | p := data.approved_target_protocols[_]]
+approved_ports := data.approved_target_ports
+
+skip_reason := sprintf("Resource type %q is not a target group; this policy only applies to target-group records.", [resource_type]) if {
+	not resource_type == "target-group"
+}
+
+title := sprintf("Validate target movement restrictions for %s", [tg_arn])
+
+description := sprintf("Target group %s protocol=%q port=%d.", [tg_arn, protocol, port])
+
+approved_protocol if {
+	protocol in approved_protocols
+}
+```
+
+</details>
+
+<!-- suggestion_end -->
+
+<details>
+<summary>🤖 Prompt for AI Agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+In `@policies/elbv2_target_movement_restrictions.rego` around lines 41 - 54, The
+check uses protocol (already uppercased) against data.approved_target_protocols
+which may contain mixed-case values; normalize the inventory by transforming
+data.approved_target_protocols into the same case before membership tests
+(update the approved_protocols binding to map/convert entries to upper-case or
+otherwise match protocol's normalization) so the approved_protocol rule
+(approved_protocol) reliably finds membership; reference the approved_protocols
+variable, the approved_protocol rule, and the protocol value when making this
+change.
+```
+
+</details>
+
+<!-- fingerprinting:phantom:poseidon:hawk -->
+
+<!-- This is an auto-generated comment by CodeRabbit -->
+Implementation guidance: Fix the Regal package/path mirroring issue by moving the Rego modules, not by renaming packages. Create `policies/compliance_framework/` and move these four files into it: `policies/elbv2_health_check_configured.rego` -> `policies/compliance_framework/elbv2_health_check_configured.rego`, `policies/elbv2_health_check_configured_test.rego` -> `policies/compliance_framework/elbv2_health_check_configured_test.rego`, `policies/elbv2_target_movement_restrictions.rego` -> `policies/compliance_framework/elbv2_target_movement_restrictions.rego`, and `policies/elbv2_target_movement_restrictions_test.rego` -> `policies/compliance_framework/elbv2_target_movement_restrictions_test.rego`. Keep all `package compliance_framework...` declarations and existing `import data.compliance_framework...` lines unchanged; do not move `policies/data.json`. After moving, run `opa fmt --list --fail policies`, `opa check --strict policies`, and `opa test policies` to catch any broken import or path assumption.
+Implementation guidance: In `policies/elbv2_target_movement_restrictions_test.rego` after the file is moved under `policies/compliance_framework/`, tighten only the two single-cause allow-list failure tests. In `test_target_protocol_not_approved`, change `count(policy.violation) >= 1 with input as http_target_group with data.approved_target_protocols as ["HTTPS"]` to `count(policy.violation) == 1 ...` with the same `with` clauses. In `test_target_port_not_approved`, change `count(policy.violation) >= 1 with input as http_target_group with data.approved_target_ports as [443]` to `count(policy.violation) == 1 ...` with the same `with` clauses. Leave the following `policy.violation[{"id": ...}]` assertions in place. Do not change the health-check tests in this step; some of those scenarios may intentionally allow multiple health-check violations.
+Implementation guidance: In `policies/elbv2_target_movement_restrictions.rego` after the file is moved under `policies/compliance_framework/`, normalize configured protocol allow-list entries to the same case as `protocol`. Replace `approved_protocols := data.approved_target_protocols` with `approved_protocols := [upper(p) | p := data.approved_target_protocols[_]]`. Keep `protocol := upper(object.get(config, "protocol", ""))`, keep `approved_ports := data.approved_target_ports`, and keep the opt-in enforcement guard `count(approved_protocols) > 0`; do not add `input.policy_inputs` or nested package data reads. Add or adjust a target movement test so a target group with protocol `HTTP` passes when `data.approved_target_protocols` is overridden as `["http"]` or `["Http"]`, while still failing against `["HTTPS"]`. Run `opa fmt --list --fail policies`, `opa check --strict policies`, and `opa test policies`.
