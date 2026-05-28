@@ -38,6 +38,15 @@ test_low_healthy_threshold_fails if {
 	policy.violation[{"id": "healthy_threshold_too_low"}] with input as inp
 }
 
+test_min_healthy_threshold_passes if {
+	inp := object.union_n([
+		well_configured_http_tg,
+		{"config": object.union(well_configured_http_tg.config, {"healthy_threshold_count": 2})},
+	])
+
+	count(policy.violation) == 0 with input as inp
+}
+
 test_http_health_check_path_missing_fails_when_required if {
 	inp := object.union_n([
 		well_configured_http_tg,
@@ -75,6 +84,22 @@ test_high_unhealthy_threshold_fails if {
 
 	count(policy.violation) >= 1 with input as inp
 	policy.violation[{"id": "unhealthy_threshold_too_high"}] with input as inp
+}
+
+test_max_unhealthy_threshold_passes if {
+	inp := object.union_n([
+		well_configured_http_tg,
+		{"config": object.union(well_configured_http_tg.config, {"unhealthy_threshold_count": 10})},
+	])
+
+	count(policy.violation) == 0 with input as inp
+}
+
+test_missing_threshold_fails_with_missing_threshold_violation if {
+	inp := object.union(object.remove(well_configured_http_tg, {"config"}), {"config": object.remove(well_configured_http_tg.config, {"healthy_threshold_count"})})
+
+	count(policy.violation) == 1 with input as inp
+	policy.violation[{"id": "health_check_thresholds_missing"}] with input as inp
 }
 
 test_non_target_group_record_skipped if {

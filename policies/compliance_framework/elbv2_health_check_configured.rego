@@ -37,8 +37,8 @@ resource_type := object.get(resource, "type", "")
 tg_arn := object.get(config, "target_group_arn", "unknown")
 hc_protocol := upper(object.get(config, "health_check_protocol", ""))
 hc_path := object.get(config, "health_check_path", "")
-healthy := object.get(config, "healthy_threshold_count", 0)
-unhealthy := object.get(config, "unhealthy_threshold_count", 0)
+healthy := object.get(config, "healthy_threshold_count", null)
+unhealthy := object.get(config, "unhealthy_threshold_count", null)
 min_healthy := data.min_healthy_threshold
 max_unhealthy := data.max_unhealthy_threshold
 require_path := data.require_health_check_path_for_http
@@ -49,7 +49,23 @@ skip_reason := sprintf("Resource type %q is not a target group; this policy only
 
 title := sprintf("Validate health check configuration for %s", [tg_arn])
 
-description := sprintf("Target group %s health_check_protocol=%q healthy=%d unhealthy=%d.", [tg_arn, hc_protocol, healthy, unhealthy])
+description := sprintf("Target group %s health_check_protocol=%q healthy=%v unhealthy=%v.", [tg_arn, hc_protocol, healthy, unhealthy])
+
+healthy_threshold_present if {
+	healthy != null
+}
+
+unhealthy_threshold_present if {
+	unhealthy != null
+}
+
+thresholds_missing if {
+	not healthy_threshold_present
+}
+
+thresholds_missing if {
+	not unhealthy_threshold_present
+}
 
 violation[{"id": "health_check_protocol_missing"}] if {
 	resource_type == "target-group"
@@ -58,12 +74,19 @@ violation[{"id": "health_check_protocol_missing"}] if {
 
 violation[{"id": "healthy_threshold_too_low"}] if {
 	resource_type == "target-group"
+	healthy_threshold_present
 	healthy < min_healthy
 }
 
 violation[{"id": "unhealthy_threshold_too_high"}] if {
 	resource_type == "target-group"
+	unhealthy_threshold_present
 	unhealthy > max_unhealthy
+}
+
+violation[{"id": "health_check_thresholds_missing"}] if {
+	resource_type == "target-group"
+	thresholds_missing
 }
 
 violation[{"id": "health_check_path_missing"}] if {

@@ -37,7 +37,7 @@ All policies skip non-`target-group` records.
 | Package | Purpose | Metric ID | Controls |
 | --- | --- | --- | --- |
 | `compliance_framework.elbv2_health_check_configured` | Flags target groups with missing health-check protocol, missing required HTTP/HTTPS path, or threshold counts outside policy bounds. | `ELB_TARGET_HEALTH` | `ctrl-a1-1-009`, `ctrl-a1-2-007` |
-| `compliance_framework.elbv2_target_movement_restrictions` | Optionally restricts target group backend protocols and ports to approved lists. | `ACM_TLS_ENDPOINTS` | `ctrl-cc6-7-002`, `ctrl-cc6-7-005` |
+| `compliance_framework.elbv2_target_movement_restrictions` | Optionally restricts target group backend protocols and ports to approved lists. | `N/A` | `ctrl-cc6-7-002`, `ctrl-cc6-7-005` |
 
 AWS always assigns some health-check defaults, so the natural failure cases are threshold bounds or the required-path rule, not disabled health checks.
 

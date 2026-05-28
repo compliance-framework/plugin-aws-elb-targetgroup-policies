@@ -4,8 +4,6 @@ package compliance_framework.elbv2_target_movement_restrictions
 # title: ELBv2 target group movement is restricted to approved protocols and ports
 # description: Checks whether a target group forwards traffic only over approved protocols and ports.
 # custom:
-#   metric_ids:
-#     - ACM_TLS_ENDPOINTS
 #   controls:
 #     - ctrl-cc6-7-002
 #     - ctrl-cc6-7-005
