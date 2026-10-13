@@ -63,7 +63,7 @@ test_http_health_check_path_missing_passes_when_not_required if {
 		{"config": object.union(well_configured_http_tg.config, {"health_check_path": ""})},
 	])
 
-	count(policy.violation) == 0 with input as inp with data.require_health_check_path_for_http as false
+	count(policy.violation) == 0 with input as inp with data.require_health_check_path_for_http as false # regal ignore:unresolved-reference
 }
 
 test_missing_health_check_protocol_fails if {

@@ -39,9 +39,9 @@ hc_protocol := upper(object.get(config, "health_check_protocol", ""))
 hc_path := object.get(config, "health_check_path", "")
 healthy := object.get(config, "healthy_threshold_count", null)
 unhealthy := object.get(config, "unhealthy_threshold_count", null)
-min_healthy := data.min_healthy_threshold
-max_unhealthy := data.max_unhealthy_threshold
-require_path := data.require_health_check_path_for_http
+min_healthy := data.min_healthy_threshold # regal ignore:unresolved-reference
+max_unhealthy := data.max_unhealthy_threshold # regal ignore:unresolved-reference
+require_path := data.require_health_check_path_for_http # regal ignore:unresolved-reference
 
 skip_reason := sprintf("Resource type %q is not a target group; this policy only applies to target-group records.", [resource_type]) if {
 	not resource_type == "target-group"
