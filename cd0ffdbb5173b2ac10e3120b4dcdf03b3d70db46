@@ -1,2 +1,5 @@
 lisa-design:
 Seed 0.1.0: releases/latest is v0.1.0 (final, tag commit 04536ae is an ancestor of main), so no bootstrap-sha. Callers, config and ci.yml are byte-identical to the reviewed and merged reference plugin-file-attestation-policies#4 (default branch main). No version.txt added (release-please adds it). README describes testing and make build only, not releasing, so it is unchanged.
+
+lisa-selfreview:
+Pass 1 (strict): verdict approve, no findings. Diff vs reference PR #4: only the manifest seed differs. actionlint v1.7.12 clean; OPA 1.14.1 check/check --strict/fmt clean, test 16/16, opa build policies OK. Shared release-please defaults: no drift.
